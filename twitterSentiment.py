@@ -3,6 +3,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from tensorflow.keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Embedding
+from tensorflow.keras.layers import Bidirectional, LSTM, Dense
+from tensorflow.keras.callbacks import EarlyStopping
 
 
 # importing data
@@ -19,8 +23,9 @@ Y = df['output'].values
 
 # label encoding
 lblencoder= LabelEncoder()
-y= lblencoder.fit_transform(Y)
-print(y)
+y_encoded= lblencoder.fit_transform(Y)
+num_classes = len(lblencoder.classes_)  # Determine the number of classes
+# print(y)
 
 # vector tokenization using tensorflow library
 tokenizer = Tokenizer(num_words=10000, oov_token='<OOV>')
@@ -45,4 +50,16 @@ model = Sequential([
     Dense(1, activation='sigmoid')
 ])
 
-model.compile()
+# Compile the model
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+# Define early stopping
+early_stopping = EarlyStopping(monitor='val_loss', patience=2, restore_best_weights=True)
+
+# Train the model
+history = model.fit(X_train, y_train, epochs=10, validation_data=(X_test, y_test), callbacks=[early_stopping])
+
+# Evaluate the model
+loss, accuracy = model.evaluate(X_test, y_test)
+print(f'Test Loss: {loss}')
+print(f'Test Accuracy: {accuracy}')
